@@ -1,0 +1,10 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "buildCommand": "npm run build -w server"
+  },
+  "deploy": {
+    "startCommand": "npm start -w server",
+    "restartPolicyType": "ON_FAILURE"
+  }
+}
