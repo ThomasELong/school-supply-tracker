@@ -1,6 +1,10 @@
+import dns from 'node:dns';
 import { Pool, types } from 'pg';
 import fs from 'node:fs';
 import path from 'node:path';
+
+// Railway's network can't reach Supabase over IPv6 — prefer IPv4.
+dns.setDefaultResultOrder('ipv4first');
 
 // Return TIMESTAMPTZ as ISO strings and DATE as plain strings
 // so they match the existing string-typed fields in our domain types.
