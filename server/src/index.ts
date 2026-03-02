@@ -12,12 +12,7 @@ import { authMiddleware } from './middleware/auth';
 import { initDb } from './db/database';
 
 const app = express();
-app.use(cors({
-  origin: [
-    'https://staff.dwellhomeschoolacademy.org',
-    'http://localhost:5173',
-  ],
-}));
+app.use(cors({ origin: true }));
 app.use(express.json());
 
 app.use('/api/auth', authRouter);
