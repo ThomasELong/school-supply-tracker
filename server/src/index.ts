@@ -43,7 +43,7 @@ app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: 
   res.status(status).json({ error: err.message ?? 'Internal Server Error' });
 });
 
-const PORT = process.env.PORT ?? 3001;
+const PORT = process.env.PORT ?? 8080;
 
 async function start() {
   await initDb();
