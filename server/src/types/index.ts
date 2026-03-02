@@ -6,6 +6,8 @@ export interface Category {
   created_at: string;
 }
 
+export type ItemType = 'consumable' | 'reusable' | 'bulk';
+
 export interface Item {
   id: number;
   name: string;
@@ -14,6 +16,7 @@ export interface Item {
   quantity_on_hand: number;
   quantity_min: number;
   needs_order: boolean;
+  item_type: ItemType;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -69,6 +72,7 @@ export interface CreateItemBody {
   quantity_on_hand: number;
   quantity_min: number;
   needs_order?: boolean;
+  item_type?: ItemType;
   notes?: string;
 }
 

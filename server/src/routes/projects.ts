@@ -86,9 +86,85 @@ function validateDate(date: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(date);
 }
 
+/**
+ * Find all past projects that haven't been consumed yet, deduct quantities
+ * for consumable items, then auto-flag anything that drops to ≤ 25% of min.
+ */
+async function processConsumedProjects(): Promise<void> {
+  const today = new Date().toISOString().split('T')[0];
+
+  const { rows: pastProjects } = await pool.query<{ id: number }>(
+    `SELECT id FROM projects WHERE scheduled_date < $1 AND consumed = false`,
+    [today]
+  );
+
+  if (pastProjects.length === 0) return;
+
+  const projectIds = pastProjects.map((p) => p.id);
+  const placeholders = projectIds.map((_, i) => `$${i + 1}`).join(', ');
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Sum up consumable quantities across all unprocessed past projects
+    const { rows: toDeduct } = await client.query<{ item_id: number; total: string }>(
+      `SELECT pi.item_id, SUM(pi.quantity_needed)::text AS total
+       FROM project_items pi
+       JOIN items i ON i.id = pi.item_id
+       WHERE pi.project_id IN (${placeholders})
+         AND i.item_type = 'consumable'
+       GROUP BY pi.item_id`,
+      projectIds
+    );
+
+    const deductedIds: number[] = [];
+    for (const row of toDeduct) {
+      await client.query(
+        `UPDATE items
+         SET quantity_on_hand = GREATEST(0, quantity_on_hand - $1),
+             updated_at = NOW()
+         WHERE id = $2`,
+        [Number(row.total), row.item_id]
+      );
+      deductedIds.push(row.item_id);
+    }
+
+    // Auto-flag items that have fallen to ≤ 25% of their minimum quantity
+    if (deductedIds.length > 0) {
+      const idPlaceholders = deductedIds.map((_, i) => `$${i + 1}`).join(', ');
+      await client.query(
+        `UPDATE items
+         SET needs_order = true
+         WHERE id IN (${idPlaceholders})
+           AND NOT needs_order
+           AND quantity_min > 0
+           AND quantity_on_hand <= quantity_min * 0.25`,
+        deductedIds
+      );
+    }
+
+    // Mark these projects as consumed so they aren't processed again
+    await client.query(
+      `UPDATE projects SET consumed = true WHERE id IN (${placeholders})`,
+      projectIds
+    );
+
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
 // ─── GET / ───────────────────────────────────────────────────────────────────
 
 router.get('/', async (req, res) => {
+  // Deduct consumables from any past projects before returning data
+  await processConsumedProjects();
+
   const { grade_level_id, subject_id, date_from, date_to } = req.query;
   let sql = `${PROJECT_SELECT} WHERE 1=1`;
   const params: (string | number)[] = [];

@@ -7,6 +7,8 @@ import itemsRouter from './routes/items';
 import gradeLevelsRouter from './routes/gradeLevels';
 import subjectsRouter from './routes/subjects';
 import projectsRouter from './routes/projects';
+import authRouter from './routes/auth';
+import { authMiddleware } from './middleware/auth';
 import { initDb } from './db/database';
 
 const app = express();
@@ -18,11 +20,12 @@ app.use(cors({
 }));
 app.use(express.json());
 
-app.use('/api/categories', categoriesRouter);
-app.use('/api/items', itemsRouter);
-app.use('/api/grade-levels', gradeLevelsRouter);
-app.use('/api/subjects', subjectsRouter);
-app.use('/api/projects', projectsRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/categories', authMiddleware, categoriesRouter);
+app.use('/api/items', authMiddleware, itemsRouter);
+app.use('/api/grade-levels', authMiddleware, gradeLevelsRouter);
+app.use('/api/subjects', authMiddleware, subjectsRouter);
+app.use('/api/projects', authMiddleware, projectsRouter);
 
 // Global error handler
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -6,7 +6,8 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { categoriesApi } from '../../api/categories';
 import { itemsApi } from '../../api/items';
-import type { Item, CreateItemBody } from '../../types';
+import { useUrgentItems } from '../../context/UrgentItemsContext';
+import type { Item, ItemType, CreateItemBody } from '../../types';
 
 interface ItemFormProps {
   open: boolean;
@@ -14,17 +15,37 @@ interface ItemFormProps {
   editItem?: Item | null;
 }
 
+const ITEM_TYPES: { value: ItemType; label: string; description: string }[] = [
+  {
+    value: 'consumable',
+    label: 'Consumable',
+    description: 'Used up per project — quantity auto-deducts after the project date',
+  },
+  {
+    value: 'reusable',
+    label: 'Reusable',
+    description: 'Returned after use — quantity never changes automatically',
+  },
+  {
+    value: 'bulk',
+    label: 'Bulk / Measured',
+    description: 'Partial-use containers (paint, glue) — quantity managed manually',
+  },
+];
+
 const EMPTY: CreateItemBody = {
   name: '',
   category_id: 0,
   quantity_on_hand: 0,
   quantity_min: 0,
   needs_order: false,
+  item_type: 'consumable',
   notes: '',
 };
 
 export function ItemForm({ open, onClose, editItem }: ItemFormProps) {
   const qc = useQueryClient();
+  const { dismissId } = useUrgentItems();
   const [form, setForm] = useState<CreateItemBody>(EMPTY);
   const [error, setError] = useState('');
 
@@ -36,6 +57,7 @@ export function ItemForm({ open, onClose, editItem }: ItemFormProps) {
         quantity_on_hand: editItem.quantity_on_hand,
         quantity_min: editItem.quantity_min,
         needs_order: editItem.needs_order,
+        item_type: editItem.item_type ?? 'consumable',
         notes: editItem.notes ?? '',
       });
     } else {
@@ -53,6 +75,7 @@ export function ItemForm({ open, onClose, editItem }: ItemFormProps) {
     mutationFn: (body: CreateItemBody) =>
       editItem ? itemsApi.update(editItem.id, body) : itemsApi.create(body),
     onSuccess: () => {
+      if (editItem) dismissId(editItem.id);
       qc.invalidateQueries({ queryKey: ['items'] });
       onClose();
     },
@@ -114,6 +137,36 @@ export function ItemForm({ open, onClose, editItem }: ItemFormProps) {
           placeholder="Select a category…"
           options={categories.map((c) => ({ value: c.id, label: c.name }))}
         />
+
+        {/* Item type selector */}
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-gray-700">Item Type</span>
+          <div className="flex flex-col gap-2">
+            {ITEM_TYPES.map((t) => (
+              <label
+                key={t.value}
+                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  form.item_type === t.value
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="item_type"
+                  value={t.value}
+                  checked={form.item_type === t.value}
+                  onChange={() => set('item_type', t.value)}
+                  className="mt-0.5 text-blue-600 focus:ring-blue-500"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-800">{t.label}</p>
+                  <p className="text-xs text-gray-500">{t.description}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <Input

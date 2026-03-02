@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, ElementType } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Pencil, Trash2, ShoppingCart, AlertTriangle } from 'lucide-react';
+import { Plus, Pencil, Trash2, ShoppingCart, AlertTriangle, Recycle, Package, FlaskConical } from 'lucide-react';
 import { itemsApi } from '../api/items';
+import type { ItemType } from '../types';
 import { categoriesApi } from '../api/categories';
 import { ItemForm } from '../components/items/ItemForm';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -11,10 +12,12 @@ import { Select } from '../components/ui/Select';
 import { Badge } from '../components/ui/Badge';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { useUrgentItems } from '../context/UrgentItemsContext';
 import type { Item } from '../types';
 
 export function InventoryPage() {
   const qc = useQueryClient();
+  const { urgentIds, dismissId } = useUrgentItems();
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<number | undefined>();
   const [needsOrderFilter, setNeedsOrderFilter] = useState(false);
@@ -32,6 +35,15 @@ export function InventoryPage() {
         needs_order: needsOrderFilter || undefined,
       }),
   });
+
+  // Clean up stale urgent IDs for items that no longer exist
+  useEffect(() => {
+    if (items.length === 0) return;
+    const itemIdSet = new Set(items.map((i) => i.id));
+    urgentIds.forEach((id) => {
+      if (!itemIdSet.has(id)) dismissId(id);
+    });
+  }, [items]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
@@ -64,6 +76,18 @@ export function InventoryPage() {
   const closeForm = () => {
     setShowForm(false);
     setEditItem(null);
+  };
+
+  // Split into urgent (pinned) and normal items
+  const urgentIdSet = new Set(urgentIds);
+  const urgentItems = items.filter((i) => urgentIdSet.has(i.id));
+  const normalItems = items.filter((i) => !urgentIdSet.has(i.id));
+
+  const rowProps = {
+    onEdit: openEdit,
+    onDelete: setDeletingItem,
+    onToggleOrder: (item: Item) =>
+      toggleOrderMutation.mutate({ id: item.id, needs_order: !item.needs_order }),
   };
 
   return (
@@ -139,6 +163,7 @@ export function InventoryPage() {
               <tr>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Item</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Category</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
                 <th className="text-center px-4 py-3 font-medium text-gray-600">On Hand</th>
                 <th className="text-center px-4 py-3 font-medium text-gray-600">Min</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
@@ -147,19 +172,27 @@ export function InventoryPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {items.map((item) => (
-                <ItemRow
-                  key={item.id}
-                  item={item}
-                  onEdit={openEdit}
-                  onDelete={setDeletingItem}
-                  onToggleOrder={(item) =>
-                    toggleOrderMutation.mutate({
-                      id: item.id,
-                      needs_order: !item.needs_order,
-                    })
-                  }
-                />
+              {urgentItems.length > 0 && (
+                <>
+                  <tr className="bg-red-50">
+                    <td colSpan={8} className="px-4 py-1.5 text-xs font-semibold text-red-700 uppercase tracking-wide">
+                      ⚠ Needs Setup — added from a project, quantities not yet configured
+                    </td>
+                  </tr>
+                  {urgentItems.map((item) => (
+                    <ItemRow key={item.id} item={item} urgent {...rowProps} />
+                  ))}
+                  {normalItems.length > 0 && (
+                    <tr className="bg-gray-50">
+                      <td colSpan={8} className="px-4 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                        All Items
+                      </td>
+                    </tr>
+                  )}
+                </>
+              )}
+              {normalItems.map((item) => (
+                <ItemRow key={item.id} item={item} {...rowProps} />
               ))}
             </tbody>
           </table>
@@ -180,13 +213,31 @@ export function InventoryPage() {
   );
 }
 
+const ITEM_TYPE_DISPLAY: Record<ItemType, { label: string; icon: ElementType; className: string }> = {
+  consumable: { label: 'Consumable', icon: Package,      className: 'text-blue-700 bg-blue-50'   },
+  reusable:   { label: 'Reusable',   icon: Recycle,      className: 'text-green-700 bg-green-50' },
+  bulk:       { label: 'Bulk',       icon: FlaskConical, className: 'text-purple-700 bg-purple-50' },
+};
+
+function ItemTypeBadge({ type }: { type: ItemType }) {
+  const { label, icon: Icon, className } = ITEM_TYPE_DISPLAY[type] ?? ITEM_TYPE_DISPLAY.consumable;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${className}`}>
+      <Icon size={11} />
+      {label}
+    </span>
+  );
+}
+
 function ItemRow({
   item,
+  urgent = false,
   onEdit,
   onDelete,
   onToggleOrder,
 }: {
   item: Item;
+  urgent?: boolean;
   onEdit: (i: Item) => void;
   onDelete: (i: Item) => void;
   onToggleOrder: (i: Item) => void;
@@ -194,9 +245,17 @@ function ItemRow({
   const isLowStock = item.quantity_min > 0 && item.quantity_on_hand < item.quantity_min;
 
   return (
-    <tr className="hover:bg-gray-50">
-      <td className="px-4 py-3 font-medium text-gray-900">{item.name}</td>
+    <tr className={urgent ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50'}>
+      <td className="px-4 py-3 font-medium text-gray-900">
+        {item.name}
+        {urgent && (
+          <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 uppercase tracking-wide">
+            New
+          </span>
+        )}
+      </td>
       <td className="px-4 py-3 text-gray-600">{item.category_name}</td>
+      <td className="px-4 py-3"><ItemTypeBadge type={item.item_type} /></td>
       <td className="px-4 py-3 text-center text-gray-700">{item.quantity_on_hand}</td>
       <td className="px-4 py-3 text-center text-gray-500">{item.quantity_min}</td>
       <td className="px-4 py-3">

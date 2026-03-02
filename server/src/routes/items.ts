@@ -10,6 +10,21 @@ const ITEM_SELECT = `
   JOIN categories c ON c.id = i.category_id
 `;
 
+const VALID_ITEM_TYPES = ['consumable', 'reusable', 'bulk'];
+
+/** After any quantity change, auto-flag items at or below 25% of their minimum. */
+async function checkLowStock(itemId: number): Promise<void> {
+  await pool.query(
+    `UPDATE items
+     SET needs_order = true
+     WHERE id = $1
+       AND NOT needs_order
+       AND quantity_min > 0
+       AND quantity_on_hand <= quantity_min * 0.25`,
+    [itemId]
+  );
+}
+
 // ─── GET /shopping-list — MUST come before /:id ─────────────────────────────
 router.get('/shopping-list', async (req, res) => {
   const { rows } = await pool.query<Item>(
@@ -17,10 +32,10 @@ router.get('/shopping-list', async (req, res) => {
   );
 
   if (req.query.format === 'csv') {
-    const header = 'Item Name,Category,Quantity On Hand,Min Quantity,Notes\n';
+    const header = 'Item Name,Category,Type,Quantity On Hand,Min Quantity,Notes\n';
     const csvRows = rows
       .map((i) =>
-        [i.name, i.category_name, i.quantity_on_hand, i.quantity_min, i.notes ?? '']
+        [i.name, i.category_name, i.item_type, i.quantity_on_hand, i.quantity_min, i.notes ?? '']
           .map((v) => `"${String(v).replace(/"/g, '""')}"`)
           .join(',')
       )
@@ -82,6 +97,11 @@ router.post('/', async (req, res) => {
     res.status(400).json({ error: 'Category is required' });
     return;
   }
+  const itemType = body.item_type ?? 'consumable';
+  if (!VALID_ITEM_TYPES.includes(itemType)) {
+    res.status(400).json({ error: 'item_type must be consumable, reusable, or bulk' });
+    return;
+  }
   const { rows: cat } = await pool.query('SELECT id FROM categories WHERE id = $1', [body.category_id]);
   if (!cat[0]) {
     res.status(400).json({ error: 'Category not found' });
@@ -89,18 +109,21 @@ router.post('/', async (req, res) => {
   }
   try {
     const { rows: inserted } = await pool.query<{ id: number }>(
-      `INSERT INTO items (name, category_id, quantity_on_hand, quantity_min, needs_order, notes)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+      `INSERT INTO items (name, category_id, quantity_on_hand, quantity_min, needs_order, item_type, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
       [
         body.name.trim(),
         body.category_id,
         body.quantity_on_hand ?? 0,
         body.quantity_min ?? 0,
         body.needs_order ?? false,
+        itemType,
         body.notes ?? null,
       ]
     );
-    const { rows } = await pool.query<Item>(`${ITEM_SELECT} WHERE i.id = $1`, [inserted[0].id]);
+    const newId = inserted[0].id;
+    await checkLowStock(newId);
+    const { rows } = await pool.query<Item>(`${ITEM_SELECT} WHERE i.id = $1`, [newId]);
     res.status(201).json(rows[0]);
   } catch (err: unknown) {
     if ((err as { code?: string }).code === '23505') {
@@ -130,16 +153,23 @@ router.put('/:id', async (req, res) => {
   const quantity_on_hand = body.quantity_on_hand ?? existing.quantity_on_hand;
   const quantity_min = body.quantity_min ?? existing.quantity_min;
   const needs_order = body.needs_order !== undefined ? body.needs_order : existing.needs_order;
+  const item_type = body.item_type ?? existing.item_type;
   const notes = body.notes !== undefined ? (body.notes ?? null) : existing.notes;
+
+  if (!VALID_ITEM_TYPES.includes(item_type)) {
+    res.status(400).json({ error: 'item_type must be consumable, reusable, or bulk' });
+    return;
+  }
 
   try {
     await pool.query(
       `UPDATE items
        SET name = $1, category_id = $2, quantity_on_hand = $3, quantity_min = $4,
-           needs_order = $5, notes = $6, updated_at = NOW()
-       WHERE id = $7`,
-      [name, category_id, quantity_on_hand, quantity_min, needs_order, notes, id]
+           needs_order = $5, item_type = $6, notes = $7, updated_at = NOW()
+       WHERE id = $8`,
+      [name, category_id, quantity_on_hand, quantity_min, needs_order, item_type, notes, id]
     );
+    await checkLowStock(id);
     const { rows } = await pool.query<Item>(`${ITEM_SELECT} WHERE i.id = $1`, [id]);
     res.json(rows[0]);
   } catch (err: unknown) {

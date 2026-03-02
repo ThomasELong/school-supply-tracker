@@ -76,3 +76,18 @@ CREATE TABLE IF NOT EXISTS project_items (
 
 CREATE INDEX IF NOT EXISTS idx_project_items_project ON project_items (project_id);
 CREATE INDEX IF NOT EXISTS idx_project_items_item    ON project_items (item_id);
+
+-- ─────────────────────────────────────────────
+-- Migrations (idempotent column additions)
+-- ─────────────────────────────────────────────
+
+-- item_type: how the item's quantity is managed
+--   consumable → auto-deducts from inventory after project date
+--   reusable   → quantity never auto-changes (brushes, tools)
+--   bulk       → user manages manually (paint, glue — partial-use containers)
+ALTER TABLE items
+  ADD COLUMN IF NOT EXISTS item_type TEXT NOT NULL DEFAULT 'consumable';
+
+-- consumed: tracks whether a past project's consumables have been deducted
+ALTER TABLE projects
+  ADD COLUMN IF NOT EXISTS consumed BOOLEAN NOT NULL DEFAULT FALSE;

@@ -5,11 +5,13 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
+import { ItemCombobox } from './ItemCombobox';
 import { gradeLevelsApi } from '../../api/gradeLevels';
 import { subjectsApi } from '../../api/subjects';
 import { itemsApi } from '../../api/items';
+import { categoriesApi } from '../../api/categories';
 import { projectsApi } from '../../api/projects';
-import type { Project, CreateProjectBody, CreateProjectItemBody } from '../../types';
+import type { Item, Project, CreateProjectBody, CreateProjectItemBody } from '../../types';
 
 interface ItemRow {
   item_id: number;
@@ -80,6 +82,11 @@ export function ProjectForm({ open, onClose, editProject, defaultDate }: Project
     queryFn: () => itemsApi.list(),
   });
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: categoriesApi.list,
+  });
+
   const mutation = useMutation({
     mutationFn: (body: CreateProjectBody) =>
       editProject
@@ -122,8 +129,6 @@ export function ProjectForm({ open, onClose, editProject, defaultDate }: Project
       items: itemsPayload,
     });
   };
-
-  const itemOptions = items.map((it) => ({ value: it.id, label: `${it.name} (${it.category_name})` }));
 
   return (
     <Modal
@@ -199,15 +204,15 @@ export function ProjectForm({ open, onClose, editProject, defaultDate }: Project
           </div>
 
           {rows.map((row, idx) => (
-            <div key={idx} className="flex items-end gap-2">
+            <div key={idx} className="flex items-start gap-2">
               <div className="flex-1">
-                <Select
+                <ItemCombobox
                   id={`proj-item-${idx}`}
                   label={idx === 0 ? 'Item' : undefined}
-                  value={row.item_id || ''}
-                  onChange={(e) => updateRow(idx, { item_id: Number(e.target.value) })}
-                  placeholder="Select item…"
-                  options={itemOptions}
+                  value={row.item_id}
+                  items={items}
+                  categories={categories}
+                  onSelect={(item: Item) => updateRow(idx, { item_id: item.id })}
                 />
               </div>
               <div className="w-24">
@@ -223,7 +228,7 @@ export function ProjectForm({ open, onClose, editProject, defaultDate }: Project
               <button
                 onClick={() => removeRow(idx)}
                 disabled={rows.length === 1}
-                className="mb-0.5 p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="mt-6 p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 aria-label="Remove item"
               >
                 <Trash2 size={15} />
