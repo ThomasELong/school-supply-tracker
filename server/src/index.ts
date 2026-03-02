@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import 'express-async-errors';
-import cors from 'cors';
 import express, { NextFunction, Request, Response } from 'express';
 import categoriesRouter from './routes/categories';
 import itemsRouter from './routes/items';
@@ -12,7 +11,21 @@ import { authMiddleware } from './middleware/auth';
 import { initDb } from './db/database';
 
 const app = express();
-app.use(cors({ origin: true }));
+
+// Manual CORS — reflects the request origin on every response
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const origin = req.headers.origin ?? '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(204);
+    return;
+  }
+  next();
+});
+
 app.use(express.json());
 
 app.use('/api/auth', authRouter);
