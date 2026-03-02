@@ -4,7 +4,7 @@
     "buildCommand": "npm install && npm run build -w server"
   },
   "deploy": {
-    "startCommand": "npm start -w server",
+    "startCommand": "node server/dist/index.js",
     "restartPolicyType": "ON_FAILURE"
   }
 }
