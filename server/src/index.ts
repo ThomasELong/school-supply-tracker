@@ -43,29 +43,14 @@ app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: 
   res.status(status).json({ error: err.message ?? 'Internal Server Error' });
 });
 
-// const PORT = process.env.PORT ?? 3001;
+const PORT = process.env.PORT ?? 3001;
 
-// async function start() {
-//   await initDb();
-//   app.listen(PORT, () => {
-//     console.log(`Server running on http://localhost:${PORT}`);
-//   });
-// }
-
-const PORT = Number(process.env.PORT) || 3001;
-
-async function start(): Promise<void> {
+async function start() {
   await initDb();
-
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
   });
 }
-
-start().catch((err) => {
-  console.error("Fatal startup error:", err);
-  process.exit(1);
-});
 
 start().catch((err) => {
   console.error('Failed to start server:', err);
