@@ -44,8 +44,8 @@ function ItemRow({ item }: { item: ProjectItem }) {
 export function DayDetailPanel({ date, projects, onClose }: DayDetailPanelProps) {
   const dayProjects = projects.filter((p) => p.scheduled_date === date);
 
-  return (
-    <div className="flex w-72 shrink-0 flex-col border-r border-gray-200 bg-white">
+  const panelContent = (
+    <>
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
         <div>
@@ -56,7 +56,7 @@ export function DayDetailPanel({ date, projects, onClose }: DayDetailPanelProps)
         </div>
         <button
           onClick={onClose}
-          className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+          className="rounded p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
           aria-label="Close"
         >
           <X size={16} />
@@ -100,6 +100,30 @@ export function DayDetailPanel({ date, projects, onClose }: DayDetailPanelProps)
           </span>
         ))}
       </div>
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile: bottom sheet overlay */}
+      <div className="md:hidden fixed inset-0 z-40 flex flex-col justify-end">
+        <div
+          className="absolute inset-0 bg-black/40"
+          onClick={onClose}
+        />
+        <div className="relative z-10 bg-white rounded-t-2xl flex flex-col max-h-[70vh] shadow-xl">
+          {/* Drag handle */}
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 rounded-full bg-gray-300" />
+          </div>
+          {panelContent}
+        </div>
+      </div>
+
+      {/* Desktop: left sidebar */}
+      <div className="hidden md:flex w-72 shrink-0 flex-col border-r border-gray-200 bg-white">
+        {panelContent}
+      </div>
+    </>
   );
 }

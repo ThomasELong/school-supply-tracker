@@ -41,47 +41,81 @@ export function ShoppingListPage() {
           description="Flag items from the Inventory page when you need to reorder them."
         />
       ) : (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Item</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Category</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">On Hand</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Min</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Notes</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {items.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{item.name}</td>
-                  <td className="px-4 py-3">
-                    <Badge variant="gray">{item.category_name}</Badge>
-                  </td>
-                  <td className="px-4 py-3 text-center text-gray-700">
-                    {item.quantity_on_hand}
-                  </td>
-                  <td className="px-4 py-3 text-center text-gray-500">{item.quantity_min}</td>
-                  <td className="px-4 py-3 text-gray-400 text-xs max-w-xs truncate">
-                    {item.notes ?? '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => unflagMutation.mutate(item.id)}
-                      disabled={unflagMutation.isPending}
-                      title="Remove from shopping list"
-                      className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                    >
-                      <X size={14} />
-                    </button>
-                  </td>
+        <>
+          {/* Mobile card list */}
+          <div className="md:hidden space-y-3">
+            {items.map((item) => (
+              <div key={item.id} className="bg-white border border-gray-200 rounded-xl p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-gray-900 text-sm">{item.name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="gray">{item.category_name}</Badge>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => unflagMutation.mutate(item.id)}
+                    disabled={unflagMutation.isPending}
+                    title="Remove from shopping list"
+                    className="p-2 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+                <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                  <span>On hand: <span className="font-medium text-gray-700">{item.quantity_on_hand}</span></span>
+                  <span>Min: <span className="font-medium text-gray-700">{item.quantity_min}</span></span>
+                </div>
+                {item.notes && (
+                  <p className="mt-2 text-xs text-gray-400 truncate">{item.notes}</p>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Item</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Category</th>
+                  <th className="text-center px-4 py-3 font-medium text-gray-600">On Hand</th>
+                  <th className="text-center px-4 py-3 font-medium text-gray-600">Min</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Notes</th>
+                  <th className="px-4 py-3" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {items.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 font-medium text-gray-900">{item.name}</td>
+                    <td className="px-4 py-3">
+                      <Badge variant="gray">{item.category_name}</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-700">
+                      {item.quantity_on_hand}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-500">{item.quantity_min}</td>
+                    <td className="px-4 py-3 text-gray-400 text-xs max-w-xs truncate">
+                      {item.notes ?? '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => unflagMutation.mutate(item.id)}
+                        disabled={unflagMutation.isPending}
+                        title="Remove from shopping list"
+                        className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );

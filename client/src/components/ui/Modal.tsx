@@ -36,7 +36,7 @@ export function Modal({ title, open, onClose, children, footer }: ModalProps) {
   return (
     <dialog
       ref={dialogRef}
-      className="rounded-xl shadow-xl p-0 w-full max-w-lg backdrop:bg-black/40 open:animate-none"
+      className="rounded-xl shadow-xl p-0 w-[calc(100vw-2rem)] max-w-lg backdrop:bg-black/40 open:animate-none"
       onClick={(e) => {
         if (e.target === dialogRef.current) onClose();
       }}
@@ -47,7 +47,7 @@ export function Modal({ title, open, onClose, children, footer }: ModalProps) {
           <X size={16} />
         </Button>
       </div>
-      <div className="px-5 py-4">{children}</div>
+      <div className="px-5 py-4 overflow-y-auto max-h-[70vh]">{children}</div>
       {footer && (
         <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
           {footer}

@@ -33,6 +33,10 @@ function monthLabel(d: Date): string {
   return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
+function monthLabelShort(d: Date): string {
+  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+}
+
 function weekLabel(d: Date): string {
   const sun = new Date(d);
   sun.setDate(sun.getDate() - sun.getDay());
@@ -41,6 +45,16 @@ function weekLabel(d: Date): string {
   const fmt = (x: Date) =>
     x.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   return `${fmt(sun)} – ${fmt(sat)}, ${sat.getFullYear()}`;
+}
+
+function weekLabelShort(d: Date): string {
+  const sun = new Date(d);
+  sun.setDate(sun.getDate() - sun.getDay());
+  const sat = new Date(sun);
+  sat.setDate(sat.getDate() + 6);
+  const fmt = (x: Date) =>
+    x.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return `${fmt(sun)} – ${fmt(sat)}`;
 }
 
 function dateRangeForView(view: CalendarView, d: Date): { date_from: string; date_to: string } {
@@ -117,10 +131,9 @@ export function SchedulePage() {
     setDefaultDate('');
   };
 
-  const label = view === 'month' ? monthLabel(currentDate) : weekLabel(currentDate);
-
   const headerAction = (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
+      {/* Nav controls */}
       <div className="flex items-center gap-1">
         <button
           onClick={handlePrev}
@@ -129,8 +142,11 @@ export function SchedulePage() {
         >
           <ChevronLeft size={18} />
         </button>
-        <span className="min-w-[200px] text-center text-sm font-semibold text-gray-800">
-          {label}
+        <span className="hidden sm:inline text-center text-sm font-semibold text-gray-800 min-w-[160px]">
+          {view === 'month' ? monthLabel(currentDate) : weekLabel(currentDate)}
+        </span>
+        <span className="sm:hidden text-center text-sm font-semibold text-gray-800 min-w-[100px]">
+          {view === 'month' ? monthLabelShort(currentDate) : weekLabelShort(currentDate)}
         </span>
         <button
           onClick={handleNext}
@@ -169,6 +185,7 @@ export function SchedulePage() {
       <PageHeader title="Schedule" action={headerAction} />
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
+        {/* DayDetailPanel: sidebar on desktop, bottom sheet on mobile */}
         {selectedDate && (
           <DayDetailPanel
             date={selectedDate}

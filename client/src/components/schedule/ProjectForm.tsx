@@ -153,7 +153,7 @@ export function ProjectForm({ open, onClose, editProject, defaultDate }: Project
           </p>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Select
             id="proj-grade"
             label="Grade Level"
@@ -205,7 +205,7 @@ export function ProjectForm({ open, onClose, editProject, defaultDate }: Project
 
           {rows.map((row, idx) => (
             <div key={idx} className="flex items-start gap-2">
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <ItemCombobox
                   id={`proj-item-${idx}`}
                   label={idx === 0 ? 'Item' : undefined}
@@ -215,10 +215,10 @@ export function ProjectForm({ open, onClose, editProject, defaultDate }: Project
                   onSelect={(item: Item) => updateRow(idx, { item_id: item.id })}
                 />
               </div>
-              <div className="w-24">
+              <div className="w-20 sm:w-24 shrink-0">
                 <Input
                   id={`proj-qty-${idx}`}
-                  label={idx === 0 ? 'Qty Needed' : undefined}
+                  label={idx === 0 ? 'Qty' : undefined}
                   type="number"
                   min={1}
                   value={row.quantity_needed}
@@ -228,7 +228,7 @@ export function ProjectForm({ open, onClose, editProject, defaultDate }: Project
               <button
                 onClick={() => removeRow(idx)}
                 disabled={rows.length === 1}
-                className="mt-6 p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="mt-6 p-2 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
                 aria-label="Remove item"
               >
                 <Trash2 size={15} />

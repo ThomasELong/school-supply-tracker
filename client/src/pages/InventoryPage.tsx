@@ -112,12 +112,12 @@ export function InventoryPage() {
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-5">
+      <div className="flex flex-wrap gap-2 mb-5">
         <Input
           placeholder="Search items…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-56"
+          className="flex-1 min-w-[140px] sm:flex-none sm:w-56"
         />
         <Select
           value={categoryId ?? ''}
@@ -126,11 +126,11 @@ export function InventoryPage() {
           }
           options={categories.map((c) => ({ value: c.id, label: c.name }))}
           placeholder="All categories"
-          className="w-48"
+          className="flex-1 min-w-[130px] sm:flex-none sm:w-48"
         />
         <button
           onClick={() => setNeedsOrderFilter((v) => !v)}
-          className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium border transition-colors ${
+          className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium border transition-colors whitespace-nowrap ${
             needsOrderFilter
               ? 'bg-orange-100 text-orange-800 border-orange-300'
               : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
@@ -141,7 +141,7 @@ export function InventoryPage() {
         </button>
       </div>
 
-      {/* Table */}
+      {/* Content */}
       {isLoading ? (
         <p className="text-sm text-gray-400">Loading…</p>
       ) : items.length === 0 ? (
@@ -157,46 +157,73 @@ export function InventoryPage() {
           }
         />
       ) : (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Item</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Category</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">On Hand</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Min</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Notes</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {urgentItems.length > 0 && (
-                <>
-                  <tr className="bg-red-50">
-                    <td colSpan={8} className="px-4 py-1.5 text-xs font-semibold text-red-700 uppercase tracking-wide">
-                      ⚠ Needs Setup — added from a project, quantities not yet configured
-                    </td>
-                  </tr>
-                  {urgentItems.map((item) => (
-                    <ItemRow key={item.id} item={item} urgent {...rowProps} />
-                  ))}
-                  {normalItems.length > 0 && (
-                    <tr className="bg-gray-50">
-                      <td colSpan={8} className="px-4 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide">
-                        All Items
+        <>
+          {/* Mobile card list */}
+          <div className="md:hidden space-y-3">
+            {urgentItems.length > 0 && (
+              <>
+                <div className="flex items-center gap-2 px-1">
+                  <span className="text-xs font-semibold text-red-700 uppercase tracking-wide">
+                    ⚠ Needs Setup
+                  </span>
+                </div>
+                {urgentItems.map((item) => (
+                  <ItemCard key={item.id} item={item} urgent {...rowProps} />
+                ))}
+                {normalItems.length > 0 && (
+                  <div className="pt-1 pb-0.5 px-1">
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">All Items</span>
+                  </div>
+                )}
+              </>
+            )}
+            {normalItems.map((item) => (
+              <ItemCard key={item.id} item={item} {...rowProps} />
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Item</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Category</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
+                  <th className="text-center px-4 py-3 font-medium text-gray-600">On Hand</th>
+                  <th className="text-center px-4 py-3 font-medium text-gray-600">Min</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Notes</th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {urgentItems.length > 0 && (
+                  <>
+                    <tr className="bg-red-50">
+                      <td colSpan={8} className="px-4 py-1.5 text-xs font-semibold text-red-700 uppercase tracking-wide">
+                        ⚠ Needs Setup — added from a project, quantities not yet configured
                       </td>
                     </tr>
-                  )}
-                </>
-              )}
-              {normalItems.map((item) => (
-                <ItemRow key={item.id} item={item} {...rowProps} />
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    {urgentItems.map((item) => (
+                      <ItemRow key={item.id} item={item} urgent {...rowProps} />
+                    ))}
+                    {normalItems.length > 0 && (
+                      <tr className="bg-gray-50">
+                        <td colSpan={8} className="px-4 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                          All Items
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                )}
+                {normalItems.map((item) => (
+                  <ItemRow key={item.id} item={item} {...rowProps} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       <ItemForm open={showForm} onClose={closeForm} editItem={editItem} />
@@ -229,6 +256,86 @@ function ItemTypeBadge({ type }: { type: ItemType }) {
   );
 }
 
+// Mobile card component
+function ItemCard({
+  item,
+  urgent = false,
+  onEdit,
+  onDelete,
+  onToggleOrder,
+}: {
+  item: Item;
+  urgent?: boolean;
+  onEdit: (i: Item) => void;
+  onDelete: (i: Item) => void;
+  onToggleOrder: (i: Item) => void;
+}) {
+  const isLowStock = item.quantity_min > 0 && item.quantity_on_hand < item.quantity_min;
+
+  return (
+    <div className={`rounded-xl border p-4 ${urgent ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'}`}>
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-gray-900 text-sm">{item.name}</span>
+            {urgent && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 uppercase tracking-wide">
+                New
+              </span>
+            )}
+          </div>
+          <span className="text-xs text-gray-500">{item.category_name}</span>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={() => onToggleOrder(item)}
+            title={item.needs_order ? 'Remove order flag' : 'Flag for ordering'}
+            className={`p-2 rounded-md transition-colors ${
+              item.needs_order
+                ? 'text-orange-500 hover:bg-orange-50'
+                : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'
+            }`}
+          >
+            <ShoppingCart size={15} />
+          </button>
+          <button
+            onClick={() => onEdit(item)}
+            className="p-2 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+          >
+            <Pencil size={15} />
+          </button>
+          <button
+            onClick={() => onDelete(item)}
+            className="p-2 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <ItemTypeBadge type={item.item_type} />
+        <span className="text-gray-500">
+          On hand: <span className="font-medium text-gray-700">{item.quantity_on_hand}</span>
+        </span>
+        <span className="text-gray-500">
+          Min: <span className="font-medium text-gray-700">{item.quantity_min}</span>
+        </span>
+        {item.needs_order && <Badge variant="orange">Needs Order</Badge>}
+        {!item.needs_order && isLowStock && (
+          <Badge variant="yellow">
+            <AlertTriangle size={11} className="mr-1" />
+            Low Stock
+          </Badge>
+        )}
+      </div>
+      {item.notes && (
+        <p className="mt-2 text-xs text-gray-400 truncate">{item.notes}</p>
+      )}
+    </div>
+  );
+}
+
+// Desktop table row component
 function ItemRow({
   item,
   urgent = false,

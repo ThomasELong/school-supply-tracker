@@ -10,7 +10,12 @@ const links = [
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  open?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ open = false, onClose }: SidebarProps) {
   const navigate = useNavigate();
   const { urgentIds } = useUrgentItems();
   const urgentCount = urgentIds.length;
@@ -21,20 +26,30 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-56 shrink-0 bg-gray-900 text-gray-100 flex flex-col min-h-screen">
+    <aside
+      className={clsx(
+        'w-56 shrink-0 bg-gray-900 text-gray-100 flex flex-col',
+        // Mobile: fixed overlay that slides in/out
+        'fixed inset-y-0 left-0 z-30 transition-transform duration-200',
+        // Desktop: static in the flex flow, always visible
+        'md:static md:translate-x-0',
+        open ? 'translate-x-0' : '-translate-x-full'
+      )}
+    >
       <div className="px-5 py-5 border-b border-gray-700">
         <h1 className="text-sm font-bold tracking-wide text-white uppercase">
           Supply Tracker
         </h1>
       </div>
-      <nav className="flex-1 px-2 py-4 space-y-0.5">
+      <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
         {links.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
+            onClick={onClose}
             className={({ isActive }) =>
               clsx(
-                'flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                'flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium transition-colors',
                 isActive
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-300 hover:bg-gray-800 hover:text-white'
@@ -54,7 +69,7 @@ export function Sidebar() {
       <div className="px-2 py-3 border-t border-gray-700">
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-2.5 w-full px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+          className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
         >
           <LogOut size={16} />
           Sign out

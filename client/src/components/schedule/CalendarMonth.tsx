@@ -2,7 +2,8 @@ import { Plus } from 'lucide-react';
 import { ProjectChip } from './ProjectChip';
 import type { Project } from '../../types';
 
-const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_HEADERS_FULL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_HEADERS_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 function toYMD(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -55,12 +56,13 @@ export function CalendarMonth({
     <div className="flex-1 overflow-auto">
       {/* Day-of-week headers */}
       <div className="grid grid-cols-7 border-b border-gray-200">
-        {DAY_HEADERS.map((d) => (
+        {DAY_HEADERS_FULL.map((d, i) => (
           <div
-            key={d}
+            key={d + i}
             className="py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide"
           >
-            {d}
+            <span className="hidden sm:inline">{d}</span>
+            <span className="sm:hidden">{DAY_HEADERS_SHORT[i]}</span>
           </div>
         ))}
       </div>
@@ -68,13 +70,12 @@ export function CalendarMonth({
       {/* Day cells */}
       <div
         className="grid grid-cols-7 flex-1"
-        style={{ gridAutoRows: 'minmax(110px, 1fr)' }}
+        style={{ gridAutoRows: 'minmax(72px, 1fr)' }}
       >
         {cells.map(({ date, inMonth }, idx) => {
           const ymd = toYMD(date);
           const dayProjects = byDate[ymd] ?? [];
           const isToday = ymd === todayStr;
-
           const isSelected = ymd === selectedDate;
 
           return (
@@ -82,7 +83,7 @@ export function CalendarMonth({
               key={idx}
               onClick={() => inMonth && onDayClick(ymd)}
               className={[
-                'relative border-r border-b border-gray-100 p-1.5 flex flex-col gap-1 min-h-0',
+                'relative border-r border-b border-gray-100 p-1 flex flex-col gap-0.5 min-h-0',
                 inMonth ? 'cursor-pointer' : 'bg-gray-50 opacity-50',
                 inMonth && !isSelected && 'bg-white hover:bg-blue-50/40',
                 isSelected && 'bg-blue-50 ring-1 ring-inset ring-blue-300',
@@ -91,10 +92,10 @@ export function CalendarMonth({
                 .join(' ')}
             >
               {/* Date number + add button */}
-              <div className="flex items-center justify-between mb-0.5">
+              <div className="flex items-center justify-between mb-0.5 gap-0.5">
                 <span
                   className={[
-                    'text-xs font-medium leading-none px-1 py-0.5 rounded',
+                    'text-[10px] sm:text-xs font-medium leading-none px-1 py-0.5 rounded',
                     isToday
                       ? 'bg-blue-600 text-white'
                       : inMonth
@@ -119,7 +120,7 @@ export function CalendarMonth({
               </div>
 
               {/* Project chips */}
-              <div className="flex flex-col gap-1 overflow-hidden">
+              <div className="flex flex-col gap-0.5 overflow-hidden">
                 {dayProjects.map((p) => (
                   <div key={p.id} onClick={(e) => e.stopPropagation()}>
                     <ProjectChip
